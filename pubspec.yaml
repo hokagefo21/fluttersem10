@@ -1,0 +1,23 @@
+name: taskflow
+description: Offline project and task manager for practical assignment 10.
+publish_to: none
+version: 1.0.0+1
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  sqlite3: ^2.9.0
+  drift: 2.28.2
+  sqlite3_flutter_libs: ^0.5.39
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  file_selector: ^1.0.3
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: 2.28.3
+  build_runner: ^2.7.0
+flutter:
+  uses-material-design: true
