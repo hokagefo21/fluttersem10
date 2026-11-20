@@ -1,48 +1,48 @@
-# TaskFlow · Практическое задание № 10
+# TaskFlow: Practical Assignment 10
 
-Офлайн-приложение на Flutter для управления проектами и задачами. SQLite хранит рабочие данные на устройстве, Drift обновляет экраны после записи. Для работы установленного приложения интернет и аккаунт не нужны.
+TaskFlow is an offline Flutter app for managing projects and tasks. SQLite stores data on the device. Drift updates the screens when records change. The installed app works without an account or an internet connection.
 
-## Запуск в Android Studio
+## Run in Android Studio
 
-Откройте корень проекта с файлом `pubspec.yaml`. Выберите Android-эмулятор или телефон и запустите `lib/main.dart`. Из терминала проекта доступны те же действия.
+Open the project root containing `pubspec.yaml`, select an Android emulator or phone, and run `lib/main.dart`. To launch from a terminal:
 
 ```sh
 flutter pub get
 flutter run
 ```
 
-Сгенерированный слой Drift включён в репозиторий. После изменения схемы запустите `dart run build_runner build`.
+The generated Drift code is included. After editing the schema, run `dart run build_runner build`.
 
-## Демонстрация
+## Demo
 
-1. Во вкладке **Люди** создайте пользователя с именем и email. Первого пользователя приложение выбирает автоматически. Значок профиля вверху позволяет выбрать, от чьего имени выполняется действие на этом устройстве.
-2. Во вкладке **Проекты** создайте проект. Откройте его и нажмите значок добавления участника. Назначьте роль Owner, Admin или Member. Нажатие на строку участника открывает редактирование роли.
-3. Откройте **Задачи проекта**, создайте задачу и выберите исполнителя, приоритет и срок. В карточке задачи смените статус через карандаш. В истории появятся оба статуса, имя автора и время. Кнопка отмены возвращает предыдущий статус и добавляет событие в журнал.
-4. Добавьте комментарий или прикрепите файл. Файл копируется в каталог приложения, в SQLite записываются его имя, путь и время добавления. После смены локального пользователя кнопка удаления доступна у его собственных комментариев.
-5. Во вкладке **Задачи** проверьте поиск, фильтры и сортировку. Список выдаётся страницами по 25 задач. Нажатие на человека открывает его задачи по всем проектам.
-6. Переместите задачу в корзину, проверьте статистику, затем восстановите её через значок корзины на главном экране. Закройте и повторно откройте приложение, чтобы проверить сохранность данных.
+1. In the people tab, create a user with a name and email address. The app selects the first user automatically. Use the profile icon to choose who performs actions on this device.
+2. In the projects tab, create a project and open it. Add a participant and assign the Owner, Admin, or Member role. Tap a participant to edit the role.
+3. Open the project's tasks. Create a task, choose an assignee and priority, and set a deadline. Use the pencil icon to change its status. The history records both statuses, the actor, and the time. Undo restores the previous status and adds a history entry.
+4. Add a comment or attach a file. TaskFlow copies the file into its own directory and stores its name, path, and timestamp in SQLite. Each local user can delete their own comments.
+5. Search, filter, or sort in the tasks tab. Each page contains up to 25 tasks. Tap a person to see their assignments across projects.
+6. Move a task to the trash, check the dashboard, and restore it using the trash icon. Close and reopen the app to verify persistence.
 
-## База и ограничения
+## Database rules
 
-Семь таблиц описаны в `lib/database/schema.drift`. Составной ключ таблицы `project_members` связывает пользователей и проекты. Внешние ключи включаются при каждом открытии базы. Уникальный email сравнивается без учёта регистра.
+The seven tables are defined in `lib/database/schema.drift`. A composite key on `project_members` links users to projects. Each database connection enables foreign keys. Email addresses are unique with case-insensitive comparison.
 
-Создание задачи и начальной истории проходит в одной транзакции. При смене исполнителя репозиторий в транзакции проверяет участие в проекте, считает открытые задачи на тот же календарный день и записывает изменение вместе с историей. На день допускаются три открытые задачи одного человека по всем проектам. Правило также действует при восстановлении из корзины и возврате в открытый статус.
+Creating a task and its initial history entry takes one transaction. Reassignment checks membership and the assignee's workload, updates the task, and records the event atomically. A person may have up to three open tasks due on the same calendar day across all projects. The same rule applies on restore and when reopening a task.
 
-Открытыми считаются `todo` и `inProgress`. Удаление пользователя с открытыми задачами заблокировано, включая задачи в корзине. После удаления пользователя его имя сохраняется в исторических событиях и комментариях. Удаление проекта каскадно удаляет его задачи и зависимые записи. Отдельную задачу можно окончательно удалить только из корзины.
+Open statuses are `todo` and `inProgress`. Users with open tasks, including tasks in the trash, cannot be deleted. Comments and history retain a deleted user's name. Deleting a project removes its tasks and dependent records. Individual tasks can be permanently deleted from the trash.
 
-Панель статистики выполняет агрегирующий SQL-запрос. Просрочены открытые задачи с дедлайном до сегодняшней даты. Процент проекта равен доле задач со статусом `done` среди всех его задач вне корзины. Для пустого проекта выводится 0%. Отменённые задачи входят в общее количество и исключены из числа открытых и просроченных.
+The dashboard uses SQL aggregation. An open task is overdue when its deadline falls before today. Project completion is the percentage of tasks outside the trash with status `done`. An empty project shows 0%. Cancelled tasks count toward the total and are excluded from open and overdue counts.
 
-## Структура
+## Source layout
 
-| Каталог | Назначение |
-|---|---|
-| `lib/database` | Схема, подключение SQLite, миграция v1 → v2 |
-| `lib/model` | Ввод задач, фильтр, показатели статистики |
-| `lib/repository` | Запросы, ограничения, транзакции, вложения |
-| `lib/state` | Реактивное состояние пользователей, проектов и выбор автора |
-| `lib/presentation` | Формы, списки, карточки, корзина и статистика |
+| Directory | Contents |
+| --- | --- |
+| `lib/database` | Schema, SQLite connection, and migration from v1 to v2 |
+| `lib/model` | Task input, filters, and dashboard metrics |
+| `lib/repository` | Queries, business rules, transactions, and attachments |
+| `lib/state` | Reactive project and user state and current actor |
+| `lib/presentation` | Forms, lists, details, trash, and dashboard |
 
-## Проверки и нагрузочная база
+## Tests and benchmark
 
 ```sh
 flutter analyze
@@ -50,14 +50,12 @@ flutter test
 flutter build apk --debug
 ```
 
-Тесты охватывают CRUD, отношения, лимит исполнителя, откат транзакций при ошибке истории, Undo, права автора, работу с файлами, каскады, корзину, статистику, поиск, страницы и обновления Drift. Для миграции тест создаёт файл SQLite по схеме v1, записывает задачу и историю, открывает его через Drift v2 и проверяет повторное открытие. Старая задача получает приоритет medium, содержимое и связи сохраняются.
+Tests cover CRUD, relationships, daily limits, transaction rollback after a history failure, undo, comment ownership, files, cascades, trash, dashboard metrics, search, pagination, and reactive updates. The migration test creates a v1 SQLite file with a task and history, opens it with Drift v2, and reopens it. The original task receives medium priority and retains its contents and relationships.
 
-Архив содержит готовую базу с 1 000 тестовых пользователей, 100 проектами, 10 000 задачами и их начальной историей. Для просмотра распакуйте архив и откройте `taskflow.sqlite` в просмотрщике SQLite. Рабочая база приложения создаётся отдельно. [Скачать тестовую базу](docs/taskflow-benchmark.zip) · [Результаты замеров и планы запросов](docs/benchmark.md)
+The archived database contains 1,000 test users, 100 projects, and 10,000 tasks with initial history entries. Extract the archive and open `taskflow.sqlite` in a SQLite viewer. The app creates its working database separately. [Sample database](docs/taskflow-benchmark.zip) | [Timings and query plans](docs/benchmark.md)
 
-Для воспроизведения сравнения запустите `python tool/benchmark.py benchmark-output` из корня проекта. Скрипт создаст базу в новом каталоге, сравнит результаты запросов, сохранит медианы времени с индексами и без них и упакует исходную базу с индексами.
+To reproduce the comparison, run `python tool/benchmark.py benchmark-output` from the project root. The script creates a database in a new directory, checks that both query runs return identical results, records median times with and without indexes, and archives the indexed database.
 
-## Проверено на Android
+## Android verification
 
-На эмуляторе Android API 36 в авиарежиме создана задача, изменён статус и добавлен комментарий. После полной остановки процесса и повторного запуска приложения карточка показала задачу, исполнителя, комментарий и историю. [Карточка после перезапуска](docs/evidence/offline-task.png)
-
-На Windows проверены `flutter analyze`, 23 автоматических теста и сборка Android debug APK для эмулятора.
+On an Android API 36 emulator in airplane mode, a task was created, its status changed, and a comment added. After a full process stop and restart, the task details still showed the assignee, comment, and history. Static analysis, 23 automated tests, and an Android emulator debug build passed on Windows. [Task details after restart](docs/evidence/offline-task.png)
